@@ -4,9 +4,11 @@ from dataclasses import dataclass
 import os
 
 from dotenv import load_dotenv
-from openai import OpenAI
+import openai
+from pprintpp import pprint
 
-
+# This dataclass holds the Databricks configuration loaded from environment variables.
+# The `frozen=True` parameter makes it immutable, which is a good practice for configuration objects.
 @dataclass(frozen=True)
 class DatabricksConfig:
     token: str
@@ -17,22 +19,23 @@ class DatabricksConfig:
 class MissingEnvironmentVariableError(ValueError):
     """Raised when one or more required environment variables are missing."""
 
-
+# This function loads Databricks environment variables and returns a typed config object.
 def get_databricks_config(validate: bool = True) -> DatabricksConfig:
     """Load Databricks environment variables and return a typed config object."""
     load_dotenv()
 
     token = os.environ.get("DATABRICKS_TOKEN", "")
     host = os.environ.get("DATABRICKS_HOST", "")
-    endpoint = os.environ.get("DATABRICKS_ENDPOINT", "")
+    model = os.environ.get("DATABRICKS_MODEL", "")
 
+    # If validate is True, check for missing variables and raise an error if any are not set.
     if validate:
         missing = [
             name
             for name, value in {
                 "DATABRICKS_TOKEN": token,
                 "DATABRICKS_HOST": host,
-                "DATABRICKS_ENDPOINT": endpoint,
+                "DATABRICKS_MODEL": model,
             }.items()
             if not value
         ]
@@ -42,12 +45,12 @@ def get_databricks_config(validate: bool = True) -> DatabricksConfig:
                 f"Missing required environment variable(s): {missing_text}"
             )
 
-    return DatabricksConfig(token=token, host=host, endpoint=endpoint)
+    return DatabricksConfig(token=token, host=host, endpoint=model)
 
 
-def create_databricks_client(config: DatabricksConfig) -> OpenAI:
+def create_databricks_client(config: DatabricksConfig) -> openai.OpenAI:
     """Create an OpenAI client configured for Databricks model serving endpoints."""
-    return OpenAI(
+    return openai.OpenAI(
         api_key=config.token,
         base_url=f"{config.host}/serving-endpoints",
     )
@@ -59,6 +62,5 @@ def bootstrap_notebook(validate: bool = True):
     client = create_databricks_client(config)
     return config.token, config.host, config.endpoint, client
 
-
 if __name__ == "__main__":
-    DATABRICKS_TOKEN, DATABRICKS_HOST, DATABRICKS_ENDPOINT, client = bootstrap_notebook()
+    DATABRICKS_TOKEN, DATABRICKS_HOST, DATABRICKS_MODEL, client = bootstrap_notebook()

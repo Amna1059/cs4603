@@ -6,3 +6,4 @@ ipykernel
 tiktoken
 mlflow
 iprogress
+pprintpp
